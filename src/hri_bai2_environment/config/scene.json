@@ -1,0 +1,108 @@
+{
+  "frame": "world",
+  "table": {
+    "center": [
+      0.3,
+      0,
+      0.04
+    ],
+    "size": [
+      0.4,
+      0.5,
+      0.08
+    ],
+    "surface_z": 0.08
+  },
+  "cubes": {
+    "red_cube": {
+      "initial_center": [
+        0.22,
+        -0.14,
+        0.096
+      ],
+      "size": [
+        0.03,
+        0.03,
+        0.03
+      ],
+      "mass": 0.05
+    },
+    "yellow_cube": {
+      "initial_center": [
+        0.22,
+        0,
+        0.096
+      ],
+      "size": [
+        0.03,
+        0.03,
+        0.03
+      ],
+      "mass": 0.05
+    },
+    "blue_cube": {
+      "initial_center": [
+        0.22,
+        0.14,
+        0.096
+      ],
+      "size": [
+        0.03,
+        0.03,
+        0.03
+      ],
+      "mass": 0.05
+    }
+  },
+  "zones": {
+    "zone_a": {
+      "surface_center": [
+        0.38,
+        -0.14,
+        0.08
+      ],
+      "size_xy": [
+        0.08,
+        0.08
+      ],
+      "placement_cube_center": [
+        0.38,
+        -0.14,
+        0.095
+      ]
+    },
+    "zone_b": {
+      "surface_center": [
+        0.38,
+        0,
+        0.08
+      ],
+      "size_xy": [
+        0.08,
+        0.08
+      ],
+      "placement_cube_center": [
+        0.38,
+        0,
+        0.095
+      ]
+    },
+    "zone_c": {
+      "surface_center": [
+        0.38,
+        0.14,
+        0.08
+      ],
+      "size_xy": [
+        0.08,
+        0.08
+      ],
+      "placement_cube_center": [
+        0.38,
+        0.14,
+        0.095
+      ]
+    }
+  },
+  "color_zone_mapping": null
+}
