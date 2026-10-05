@@ -1,0 +1,55 @@
+1791222179.6739204 [INFO] [launch]: All log files can be found below /home/hung/workspaces/ur_gz_humble/artifacts/gripper_debug/final_roslog/2026-10-06-00-42-59-673275-7560-ubuntu-34440
+1791222179.6740139 [INFO] [launch]: Default logging verbosity is set to INFO
+1791222180.4435508 [INFO] [robot_state_publisher-1]: process started with pid [34446]
+1791222180.4438689 [INFO] [spawner-2]: process started with pid [34448]
+1791222180.4439778 [INFO] [spawner-3]: process started with pid [34450]
+1791222180.4440715 [INFO] [create-4]: process started with pid [34452]
+1791222180.4441521 [INFO] [ign gazebo-5]: process started with pid [34454]
+1791222180.4442229 [INFO] [parameter_bridge-6]: process started with pid [34456]
+1791222180.4442916 [INFO] [spawner-7]: process started with pid [34461]
+1791222180.4443586 [INFO] [move_group-8]: process started with pid [34463]
+1791222180.4444282 [INFO] [servo_node_main-9]: process started with pid [34465]
+1791222180.4444880 [INFO] [initialize_scene.py-10]: process started with pid [34467]
+1791222180.4593840 [robot_state_publisher-1] [INFO] [1791222180.458840633] [robot_state_publisher]: got segment base
+1791222180.4595923 [robot_state_publisher-1] [INFO] [1791222180.458930387] [robot_state_publisher]: got segment base_link
+1791222180.4596519 [robot_state_publisher-1] [INFO] [1791222180.458935942] [robot_state_publisher]: got segment base_link_inertia
+1791222180.4596963 [robot_state_publisher-1] [INFO] [1791222180.458939519] [robot_state_publisher]: got segment flange
+1791222180.4597404 [robot_state_publisher-1] [INFO] [1791222180.458943104] [robot_state_publisher]: got segment forearm_link
+1791222180.4597824 [robot_state_publisher-1] [INFO] [1791222180.458946446] [robot_state_publisher]: got segment ft_frame
+1791222180.4598241 [robot_state_publisher-1] [INFO] [1791222180.458949604] [robot_state_publisher]: got segment grasp_tcp
+1791222180.4598668 [robot_state_publisher-1] [INFO] [1791222180.458952810] [robot_state_publisher]: got segment gripper_base
+1791222180.4599109 [robot_state_publisher-1] [INFO] [1791222180.458956313] [robot_state_publisher]: got segment ground_plane
+1791222180.4599528 [robot_state_publisher-1] [INFO] [1791222180.458959906] [robot_state_publisher]: got segment left_finger
+1791222180.4600000 [robot_state_publisher-1] [INFO] [1791222180.458962976] [robot_state_publisher]: got segment right_finger
+1791222180.4600523 [robot_state_publisher-1] [INFO] [1791222180.458966301] [robot_state_publisher]: got segment shoulder_link
+1791222180.4604273 [robot_state_publisher-1] [INFO] [1791222180.458969520] [robot_state_publisher]: got segment tool0
+1791222180.4605310 [robot_state_publisher-1] [INFO] [1791222180.458972911] [robot_state_publisher]: got segment upper_arm_link
+1791222180.4605885 [robot_state_publisher-1] [INFO] [1791222180.458976092] [robot_state_publisher]: got segment world
+1791222180.4606450 [robot_state_publisher-1] [INFO] [1791222180.458979769] [robot_state_publisher]: got segment wrist_1_link
+1791222180.4606915 [robot_state_publisher-1] [INFO] [1791222180.458983447] [robot_state_publisher]: got segment wrist_2_link
+1791222180.4607270 [robot_state_publisher-1] [INFO] [1791222180.458986654] [robot_state_publisher]: got segment wrist_3_link
+1791222180.6987281 [spawner-3] [INFO] [1791222180.698286797] [spawner_joint_trajectory_controller]: waiting for service /controller_manager/list_controllers to become available...
+1791222180.9484539 [INFO] [create-4]: process has finished cleanly [pid 34452]
+1791222181.0882900 [spawner-2] [INFO] [1791222181.088027580] [spawner_joint_state_broadcaster]: waiting for service /controller_manager/list_controllers to become available...
+1791222181.7855866 [INFO] [initialize_scene.py-10]: process has finished cleanly [pid 34467]
+1791222183.7166495 [spawner-3] [INFO] [1791222183.716493628] [spawner_joint_trajectory_controller]: [94mLoaded [1mjoint_trajectory_controller[0m
+1791222183.7381008 [spawner-3] [INFO] [1791222183.737958853] [spawner_joint_trajectory_controller]: [92mConfigured and activated [1mjoint_trajectory_controller[0m
+1791222183.8525887 [spawner-2] [INFO] [1791222183.852256874] [spawner_joint_state_broadcaster]: [94mLoaded [1mjoint_state_broadcaster[0m
+1791222183.8621004 [spawner-2] [INFO] [1791222183.861951597] [spawner_joint_state_broadcaster]: [92mConfigured and activated [1mjoint_state_broadcaster[0m
+1791222183.8758450 [INFO] [spawner-3]: process has finished cleanly [pid 34450]
+1791222183.8789921 [INFO] [spawner-7]: process has finished cleanly [pid 34461]
+1791222183.9905655 [INFO] [spawner-2]: process has finished cleanly [pid 34448]
+1791222841.5932350 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1791222841.5951536 [INFO] [servo_node_main-9]: sending signal 'SIGINT' to process[servo_node_main-9]
+1791222841.5959821 [INFO] [move_group-8]: sending signal 'SIGINT' to process[move_group-8]
+1791222841.5967848 [INFO] [parameter_bridge-6]: sending signal 'SIGINT' to process[parameter_bridge-6]
+1791222841.5975649 [INFO] [ign gazebo-5]: sending signal 'SIGINT' to process[ign gazebo-5]
+1791222841.5984273 [INFO] [robot_state_publisher-1]: sending signal 'SIGINT' to process[robot_state_publisher-1]
+1791222841.5993497 [robot_state_publisher-1] [INFO] [1791222841.598521088] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+1791222841.7036362 [INFO] [parameter_bridge-6]: process has finished cleanly [pid 34456]
+1791222841.7053788 [INFO] [robot_state_publisher-1]: process has finished cleanly [pid 34446]
+1791222841.7141886 [INFO] [servo_node_main-9]: process has finished cleanly [pid 34465]
+1791222842.7586730 [ERROR] [move_group-8]: process has died [pid 34463, exit code -11, cmd '/opt/ros/humble/lib/moveit_ros_move_group/move_group --ros-args --params-file /tmp/launch_params_gmh_tvy_ --params-file /tmp/launch_params_nkve8s3u --params-file /tmp/launch_params_01k3pbm7 --params-file /opt/ros/humble/share/ur_moveit_config/config/kinematics.yaml --params-file /tmp/launch_params_gb8ebt8l --params-file /tmp/launch_params_f7w2jp5e --params-file /tmp/launch_params_rkd_u_e9 --params-file /tmp/launch_params_6gh5e0d7 --params-file /tmp/launch_params_0474eys2 --params-file /tmp/launch_params_73iyqaf4 --params-file /tmp/launch_params_lpnkbh7i'].
+1791222846.6004701 [ERROR] [ign gazebo-5]: process[ign gazebo-5] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1791222846.6009634 [INFO] [ign gazebo-5]: sending signal 'SIGTERM' to process[ign gazebo-5]
+1791222846.6014318 [ERROR] [ign gazebo-5]: process has died [pid 34454, exit code -15, cmd 'ruby /usr/bin/ign gazebo  -s -r -v 4 /home/hung/workspaces/ur_gz_humble/install/hri_bai2_environment/share/hri_bai2_environment/worlds/bai2.sdf --force-version 6'].

@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Một link hình hộp: hình hiển thị, va chạm và quán tính. -->
+  <xacro:macro name="hri_box_link"
+               params="name sx sy sz mass center_z color">
+
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 ${center_z}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${sx} ${sy} ${sz}"/>
+        </geometry>
+        <material name="${name}_material">
+          <color rgba="${color}"/>
+        </material>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 ${center_z}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${sx} ${sy} ${sz}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 ${center_z}" rpy="0 0 0"/>
+        <mass value="${mass}"/>
+        <inertia
+          ixx="${mass * (sy*sy + sz*sz) / 12.0}"
+          ixy="0"
+          ixz="0"
+          iyy="${mass * (sx*sx + sz*sz) / 12.0}"
+          iyz="0"
+          izz="${mass * (sx*sx + sy*sy) / 12.0}"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+  <!-- Gripper hai ngón gắn vào link cha của robot. -->
+  <xacro:macro name="hri_simple_gripper" params="parent prefix">
+
+    <!-- Đế: rộng 8 cm, sâu 4 cm, dày 2 cm. -->
+    <xacro:hri_box_link
+      name="${prefix}gripper_base"
+      sx="0.08" sy="0.04" sz="0.02"
+      mass="0.15" center_z="0.01"
+      color="0.25 0.25 0.25 1"/>
+
+    <joint name="${prefix}gripper_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}gripper_base"/>
+      <origin xyz="0 0 0.005" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Mỗi ngón: dày 1 cm, rộng 2 cm, dài 6 cm. -->
+    <xacro:hri_box_link
+      name="${prefix}left_finger"
+      sx="0.01" sy="0.02" sz="0.06"
+      mass="0.04" center_z="0.03"
+      color="0.70 0.70 0.75 1"/>
+
+    <xacro:hri_box_link
+      name="${prefix}right_finger"
+      sx="0.01" sy="0.02" sz="0.06"
+      mass="0.04" center_z="0.03"
+      color="0.70 0.70 0.75 1"/>
+
+    <!-- Hai ngón trượt ra ngoài theo hai hướng ngược nhau. -->
+    <joint name="${prefix}left_finger_joint" type="prismatic">
+      <parent link="${prefix}gripper_base"/>
+      <child link="${prefix}left_finger"/>
+      <origin xyz="0.018 0 0.02" rpy="0 0 0"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="0.0" upper="0.02"
+             effort="20.0" velocity="0.02"/>
+      <dynamics damping="1.0" friction="0.0"/>
+    </joint>
+
+    <joint name="${prefix}right_finger_joint" type="prismatic">
+      <parent link="${prefix}gripper_base"/>
+      <child link="${prefix}right_finger"/>
+      <origin xyz="-0.018 0 0.02" rpy="0 0 0"/>
+      <axis xyz="-1 0 0"/>
+      <limit lower="0.0" upper="0.02"
+             effort="20.0" velocity="0.02"/>
+      <dynamics damping="1.0" friction="0.0"/>
+    </joint>
+
+    <!-- Điểm tham chiếu giữa hai ngón để lập kế hoạch gắp. -->
+    <link name="${prefix}grasp_tcp"/>
+
+    <joint name="${prefix}grasp_tcp_joint" type="fixed">
+      <parent link="${prefix}gripper_base"/>
+      <child link="${prefix}grasp_tcp"/>
+      <origin xyz="0 0 0.065" rpy="0 0 0"/>
+    </joint>
+
+  </xacro:macro>
+</robot>

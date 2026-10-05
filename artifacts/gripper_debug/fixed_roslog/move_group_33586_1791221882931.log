@@ -1,0 +1,68 @@
+[WARN] [1791221882.945669776] [move_group.move_group]: Falling back to using the the move_group node namespace (deprecated behavior).
+[INFO] [1791221882.949021366] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0 seconds
+[INFO] [1791221882.949157419] [moveit_robot_model.robot_model]: Loading robot model 'ur'...
+[INFO] [1791221882.949163392] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[INFO] [1791221882.995670226] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Publishing maintained planning scene on 'monitored_planning_scene'
+[INFO] [1791221882.995809293] [moveit.ros_planning_interface.moveit_cpp]: Listening to 'joint_states' for joint states
+[INFO] [1791221882.996228055] [moveit_ros.current_state_monitor]: Listening to joint states on topic 'joint_states'
+[INFO] [1791221882.996468773] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/attached_collision_object' for attached collision objects
+[INFO] [1791221882.996482923] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
+[INFO] [1791221882.996621033] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/planning_scene'
+[INFO] [1791221882.996630138] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting world geometry update monitor for collision objects, attached objects, octomap updates.
+[INFO] [1791221882.996770121] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'collision_object'
+[INFO] [1791221882.996911405] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'planning_scene_world' for planning scene world geometry
+[WARN] [1791221882.996990943] [moveit.ros.occupancy_map_monitor.middleware_handle]: Resolution not specified for Octomap. Assuming resolution = 0.1 instead
+[ERROR] [1791221882.996998350] [moveit.ros.occupancy_map_monitor.middleware_handle]: No 3D sensor plugin(s) defined for octomap updates
+[INFO] [1791221882.999639834] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'move_group'
+[INFO] [1791221883.007489621] [moveit.ros_planning.planning_pipeline]: Using planning interface 'OMPL'
+[INFO] [1791221883.008597358] [moveit_ros.add_time_optimal_parameterization]: Param 'move_group.path_tolerance' was not set. Using default value: 0.100000
+[INFO] [1791221883.008609830] [moveit_ros.add_time_optimal_parameterization]: Param 'move_group.resample_dt' was not set. Using default value: 0.100000
+[INFO] [1791221883.008612734] [moveit_ros.add_time_optimal_parameterization]: Param 'move_group.min_angle_change' was not set. Using default value: 0.001000
+[INFO] [1791221883.008621568] [moveit_ros.fix_workspace_bounds]: Param 'move_group.default_workspace_bounds' was not set. Using default value: 10.000000
+[INFO] [1791221883.008630506] [moveit_ros.fix_start_state_bounds]: Param 'move_group.start_state_max_bounds_error' was set to 0.100000
+[INFO] [1791221883.008633756] [moveit_ros.fix_start_state_bounds]: Param 'move_group.start_state_max_dt' was not set. Using default value: 0.500000
+[INFO] [1791221883.008640791] [moveit_ros.fix_start_state_collision]: Param 'move_group.start_state_max_dt' was not set. Using default value: 0.500000
+[INFO] [1791221883.008643683] [moveit_ros.fix_start_state_collision]: Param 'move_group.jiggle_fraction' was not set. Using default value: 0.020000
+[INFO] [1791221883.008646473] [moveit_ros.fix_start_state_collision]: Param 'move_group.max_sampling_attempts' was not set. Using default value: 100
+[INFO] [1791221883.008652967] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
+[INFO] [1791221883.008655242] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
+[INFO] [1791221883.008657325] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
+[INFO] [1791221883.008659122] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
+[INFO] [1791221883.008660916] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
+[INFO] [1791221883.022002548] [moveit.plugins.moveit_simple_controller_manager]: Added FollowJointTrajectory controller for scaled_joint_trajectory_controller
+[INFO] [1791221883.023026363] [moveit.plugins.moveit_simple_controller_manager]: Added FollowJointTrajectory controller for joint_trajectory_controller
+[INFO] [1791221883.023147450] [moveit.plugins.moveit_simple_controller_manager]: Returned 2 controllers in list
+[INFO] [1791221883.023164348] [moveit.plugins.moveit_simple_controller_manager]: Returned 2 controllers in list
+[INFO] [1791221883.023406735] [moveit_ros.trajectory_execution_manager]: Trajectory execution is not managing controllers
+[INFO] [1791221883.023423141] [move_group.move_group]: MoveGroup debug mode is ON
+[INFO] [1791221883.033520011] [move_group.move_group]: 
+
+********************************************************
+* MoveGroup using: 
+*     - ApplyPlanningSceneService
+*     - ClearOctomapService
+*     - CartesianPathService
+*     - ExecuteTrajectoryAction
+*     - GetPlanningSceneService
+*     - KinematicsService
+*     - MoveAction
+*     - MotionPlanService
+*     - QueryPlannersService
+*     - StateValidationService
+********************************************************
+
+[INFO] [1791221883.033559666] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context using planning plugin ompl_interface/OMPLPlanner
+[INFO] [1791221883.033568354] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context initialization complete
+[INFO] [1791222043.454649138] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[INFO] [1791222043.454791863] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[INFO] [1791222043.454851995] [moveit_move_group_default_capabilities.move_action_capability]: Combined planning and execution request received for MoveGroup action. Forwarding to planning and execution pipeline.
+[INFO] [1791222043.454914943] [moveit_ros.plan_execution]: Planning attempt 1 of at most 1
+[INFO] [1791222043.455093021] [moveit_collision_detection_fcl.collision_common]: Found a contact between 'gripper_base' (type 'Robot link') and 'right_finger' (type 'Robot link'), which constitutes a collision. Contact information is not stored.
+[INFO] [1791222043.455103532] [moveit_collision_detection_fcl.collision_common]: Collision checking is considered complete (collision was found and 0 contacts are stored)
+[INFO] [1791222043.455107318] [moveit_ros.fix_start_state_collision]: Start state appears to be in collision with respect to group ur_manipulator
+[INFO] [1791222043.455243002] [moveit_ros.fix_start_state_collision]: Found a valid state near the start state at distance 0.429265 after 1 attempts
+[INFO] [1791222043.455664836] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'ur_manipulator' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[WARN] [1791222053.455911336] [ompl]: ./src/ompl/tools/multiplan/src/ParallelPlan.cpp:138 - ParallelPlan::solve(): Unable to find solution by any of the threads in 10.000043 seconds
+[INFO] [1791222053.455967098] [moveit.ompl_planning.model_based_planning_context]: Unable to solve the planning problem
+[INFO] [1791222053.456013890] [moveit_move_group_default_capabilities.move_action_capability]: Catastrophic failure
+[INFO] [1791222163.013689231] [rclcpp]: signal_handler(SIGINT/SIGTERM)

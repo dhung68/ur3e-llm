@@ -1,0 +1,65 @@
+{
+  "moveit_gripper_collision_links": [
+    "gripper_base",
+    "left_finger",
+    "right_finger"
+  ],
+  "scene_objects": [
+    "blue_cube",
+    "ground_plane",
+    "red_cube",
+    "work_table",
+    "yellow_cube"
+  ],
+  "moveit_joint_positions": {
+    "shoulder_pan_joint": 1.34387766237284e-07,
+    "shoulder_lift_joint": -1.5699999096046051,
+    "elbow_joint": -1.3895245270554248e-07,
+    "wrist_1_joint": -1.5699997162343884,
+    "wrist_2_joint": -1.5176666066977505e-07,
+    "wrist_3_joint": -2.3519793323468714e-07,
+    "left_finger_joint": 0.015013101670842164,
+    "right_finger_joint": 0.014986898329158371
+  },
+  "ros_joint_positions": {
+    "shoulder_pan_joint": 1.3438776623728402e-07,
+    "shoulder_lift_joint": -1.5699999096046051,
+    "elbow_joint": -1.3895245270554262e-07,
+    "wrist_1_joint": -1.5699997162343884,
+    "wrist_2_joint": -1.5176666066977528e-07,
+    "wrist_3_joint": -2.3519793323468216e-07,
+    "left_finger_joint": 0.01501310179232553,
+    "right_finger_joint": 0.014986898207675004
+  },
+  "state_valid": true,
+  "contacts": [],
+  "arm": {
+    "status": 4,
+    "moveit_error_code": 1,
+    "target": [
+      0.10000013438776624,
+      -1.5699999096046051,
+      -1.3895245270554248e-07,
+      -1.5699997162343884,
+      -1.5176666066977491e-07,
+      -1.57079632679
+    ],
+    "actual": [
+      0.10087115900569141,
+      -1.5705519374284715,
+      -0.0002602368486672884,
+      -1.5702612677323557,
+      0.0009420258545196884,
+      -1.570125756309361
+    ],
+    "abs_error": [
+      0.0008710246179251674,
+      0.00055202782386643,
+      0.0002600978962145829,
+      0.00026155149796736055,
+      0.0009421776211803581,
+      0.0006705704806391211
+    ],
+    "planned_points": 39
+  }
+}

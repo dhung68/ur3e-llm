@@ -1,0 +1,19 @@
+[INFO] [1791221882.920143002] [robot_state_publisher]: got segment base
+[INFO] [1791221882.920269671] [robot_state_publisher]: got segment base_link
+[INFO] [1791221882.920279110] [robot_state_publisher]: got segment base_link_inertia
+[INFO] [1791221882.920284771] [robot_state_publisher]: got segment flange
+[INFO] [1791221882.920290480] [robot_state_publisher]: got segment forearm_link
+[INFO] [1791221882.920295736] [robot_state_publisher]: got segment ft_frame
+[INFO] [1791221882.920300948] [robot_state_publisher]: got segment grasp_tcp
+[INFO] [1791221882.920306385] [robot_state_publisher]: got segment gripper_base
+[INFO] [1791221882.920312103] [robot_state_publisher]: got segment ground_plane
+[INFO] [1791221882.920317900] [robot_state_publisher]: got segment left_finger
+[INFO] [1791221882.920323130] [robot_state_publisher]: got segment right_finger
+[INFO] [1791221882.920328314] [robot_state_publisher]: got segment shoulder_link
+[INFO] [1791221882.920333782] [robot_state_publisher]: got segment tool0
+[INFO] [1791221882.920339246] [robot_state_publisher]: got segment upper_arm_link
+[INFO] [1791221882.920345253] [robot_state_publisher]: got segment world
+[INFO] [1791221882.920351062] [robot_state_publisher]: got segment wrist_1_link
+[INFO] [1791221882.920357177] [robot_state_publisher]: got segment wrist_2_link
+[INFO] [1791221882.920362943] [robot_state_publisher]: got segment wrist_3_link
+[INFO] [1791222163.016587995] [rclcpp]: signal_handler(SIGINT/SIGTERM)
