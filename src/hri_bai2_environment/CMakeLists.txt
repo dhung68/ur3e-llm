@@ -6,7 +6,7 @@ find_package(ament_cmake REQUIRED)
 
 # Cài các file launch, world và cấu hình.
 install(
-  DIRECTORY launch worlds config
+  DIRECTORY launch worlds config srdf
   DESTINATION share/${PROJECT_NAME}
 )
 

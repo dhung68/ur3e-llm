@@ -20,6 +20,14 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>ur_simulation_gz</exec_depend>
   <exec_depend>ur_moveit_config</exec_depend>
+  <exec_depend>hri_ur3e_description</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>tf2_msgs</exec_depend>
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_simple_controller_manager</exec_depend>
+  <exec_depend>rviz2</exec_depend>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>ament_index_python</exec_depend>

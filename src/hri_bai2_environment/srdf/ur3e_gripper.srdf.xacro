@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
+  <xacro:arg name="name" default="ur"/>
+  <xacro:arg name="prefix" default=""/>
+  <xacro:include filename="$(find ur_moveit_config)/srdf/ur_macro.srdf.xacro"/>
+  <xacro:ur_srdf name="$(arg name)" prefix="$(arg prefix)"/>
+  <!-- Keep the upstream arm group; the second chain gives KDL the fixed TCP. -->
+  <group name="ur_grasp">
+    <chain base_link="base_link" tip_link="grasp_tcp"/>
+  </group>
+  <group name="gripper">
+    <joint name="left_finger_joint"/>
+    <joint name="right_finger_joint"/>
+  </group>
+  <group_state name="open" group="gripper">
+    <joint name="left_finger_joint" value="0.015"/>
+    <joint name="right_finger_joint" value="0.015"/>
+  </group_state>
+  <group_state name="closed" group="gripper">
+    <joint name="left_finger_joint" value="0"/>
+    <joint name="right_finger_joint" value="0"/>
+  </group_state>
+  <end_effector name="two_finger_gripper" parent_link="grasp_tcp"
+                group="gripper" parent_group="ur_grasp"/>
+</robot>
