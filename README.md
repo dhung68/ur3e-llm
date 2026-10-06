@@ -1,184 +1,202 @@
-# Bài thực hành 03 — UR3e, camera RGB-D và LLM
+# Bài thực hành 03 — UR3e, camera và LLM
 
-Bộ nộp trên nhánh `assignments_3`, giữ cấu trúc rút gọn hiện có và bổ sung
-bản sửa camera đã kiểm chứng ngày 07/10/2026. README và năm package tự xây là toàn bộ
-mã cần nộp; package UR tải riêng. Giữ `.gitignore` và LICENSE; không kèm test,
-runner kiểm thử, báo cáo, log/evidence, ảnh debug, cache hoặc build/install.
+## 1. Chuẩn bị
 
-```text
-src/
-  hri_ur3e_description/  # UR3e/gripper/TCP, ros2_control và cấu hình
-  hri_bai2_environment/  # MoveIt overlay/SRDF/RViz và tài nguyên nền Bài 02
-  hri_bai3_environment/  # world 5 cube, camera cố định, launch, scene.json
-  hri_bai3_perception/   # OpenCV/RGB-D, quan sát và pose vật trong frame world
-  ur3_llm_control/       # prompt/9Router, validator, executor và robot skills
-```
+- Ubuntu 22.04 và ROS 2 Humble Desktop.
+- Gazebo Fortress, MoveIt 2; máy hỗ trợ rendering Ogre2.
+- 9Router đang chạy, có model sử dụng được và key 9Router.
 
-Luồng: RGB + depth + CameraInfo → `/bai3/table_state` → context occupancy → LLM
-qua 9Router → JSON `home/pick/place` → validator toàn plan → executor tuần tự →
-MoveIt/Gazebo → camera xác nhận gắp/giữ/thả và cập nhật scene. Arm và gripper
-Bài 03 đều qua MoveIt; PID/gravity/collision/gắp bằng contact vật lý được giữ.
-LLM không sinh joint command, trajectory hoặc tọa độ tự do; không teleport/weld.
-
-## Dependency và phiên bản
-
-Dùng **Ubuntu 22.04 Jammy, ROS 2 Humble, Gazebo Fortress (Ignition Gazebo 6)**,
-desktop X11 và GPU/rendering hỗ trợ Ogre2. Máy kiểm chứng dùng:
-
-| Thành phần | Phiên bản đã dùng |
-|---|---|
-| Ubuntu / Python | 22.04.5 / 3.10.12 |
-| Ignition Gazebo / Sensors / Rendering | 6.18.0 / 6.9.0 / 6.6.4, backend Ogre2 |
-| MoveIt 2 / moveit_msgs | 2.5.10 / 2.2.3 |
-| ur_description / ur_moveit_config / ur_controllers | 2.13.0 / 2.14.0 / 2.14.0 |
-| ros_gz_bridge, ros_gz_sim / ign_ros2_control | 0.244.26 / 0.7.21 |
-| OpenCV / cv_bridge | 4.5.4 / 3.2.1 |
-| NumPy / SciPy / Pillow / PyYAML | 1.21.5 / 1.8.0 / 9.0.1 / 5.4.1 |
-| UR simulation source | humble, package 0.5.0, commit ghim bên dưới |
-
-Cần ROS desktop, kho apt ROS Humble, colcon/rosdep, xacro, controller_manager,
-ros2_controllers, TF2, ROS message/action packages, RViz2, KDL/OMPL.
-Gazebo Sensors phải có RGB-D và rendering Ogre2; không dùng Classic/Harmonic
-hoặc ROS Jazzy thay phiên bản nền. Không cần YOLO hoặc OpenAI SDK.
-Ảnh tùy chọn dùng Xlib/Pillow, `xwininfo`/`xprop`; không dùng ảnh tạo sinh.
-
-## Tải và build trong workspace riêng
+## 2. Tải mã nguồn
 
 ```bash
 git clone --branch assignments_3 --single-branch \
-  https://github.com/dhung68/ur3e-llm.git ~/workspaces/ur_gz_humble_bai3
+  https://github.com/dhung68/ur3e-llm.git \
+  ~/workspaces/ur_gz_humble_bai3
+
 cd ~/workspaces/ur_gz_humble_bai3
 source /opt/ros/humble/setup.bash
+```
+
+## 3. Cài dependency
+
+```bash
 sudo apt-get update
 sudo apt-get install git python3-colcon-common-extensions python3-rosdep \
-  python3-numpy python3-scipy python3-pil python3-yaml python3-opencv x11-utils \
-  ros-humble-cv-bridge ros-humble-ur-description ros-humble-ur-moveit-config \
-  ros-humble-ur-controllers ros-humble-moveit ros-humble-ign-ros2-control \
-  ros-humble-ros-gz libignition-gazebo6-plugins libignition-rendering6-ogre2 \
+  python3-numpy python3-scipy python3-pil python3-yaml python3-opencv \
+  ros-humble-cv-bridge ros-humble-ur-description \
+  ros-humble-ur-moveit-config ros-humble-ur-controllers \
+  ros-humble-moveit ros-humble-ign-ros2-control ros-humble-ros-gz \
+  libignition-gazebo6-plugins libignition-rendering6-ogre2 \
   libignition-sensors6-rgbd-camera
+```
+
+Tải package mô phỏng UR:
+
+```bash
 git clone --branch humble --single-branch \
   https://github.com/UniversalRobots/Universal_Robots_ROS2_GZ_Simulation.git \
   src/ur_simulation_gz
-git -C src/ur_simulation_gz checkout e49336eb369a3e75fd31753512d4afb3c0c1eb6f
+
+git -C src/ur_simulation_gz checkout \
+  e49336eb369a3e75fd31753512d4afb3c0c1eb6f
+```
+
+Nếu chưa khởi tạo rosdep, chạy `sudo rosdep init` một lần. Sau đó:
+
+```bash
 rosdep update
 rosdep install --from-paths src --ignore-src --rosdistro humble -y
-colcon build --packages-select ur_simulation_gz hri_ur3e_description hri_bai2_environment hri_bai3_perception hri_bai3_environment ur3_llm_control --symlink-install
+```
+
+## 4. Build
+
+```bash
+colcon build --symlink-install --packages-select \
+  ur_simulation_gz hri_ur3e_description hri_bai2_environment \
+  hri_bai3_perception hri_bai3_environment ur3_llm_control
+
 source install/setup.bash
 ```
 
-ROS Humble phải được cài trước. Nếu chưa khởi tạo rosdep, chạy `sudo rosdep init`
-trước `rosdep update`. UR description/MoveIt/controllers dùng bản apt Humble;
-chỉ clone UR simulation như trên, không sửa source UR. Không source overlay cũ
-Bài 02/Bài 03 vào workspace mới. Quy trình cài trên máy sạch và lệnh build gộp
-trên chưa được chạy lại trong lượt đóng gói.
-
-## Launch — terminal 1
-
-Chỉ một phiên Gazebo/RViz và một client điều khiển. Bắt đầu **world mới**, tay
-trống; blue ban đầu chiếm zone_b. Kết thúc phiên cũ đúng cây tiến trình khi robot
-đã về home/tay trống; không ngắt đột ngột khi đang mang vật.
+## 5. Chạy mô phỏng — terminal 1
 
 ```bash
 cd ~/workspaces/ur_gz_humble_bai3
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-export ROS_DOMAIN_ID=221 ROS_LOCALHOST_ONLY=1 IGN_PARTITION=bai3_manual_demo221 DISPLAY=:0
-ros2 launch hri_bai3_environment bai3_sim.launch.py moveit_launch_rviz:=false gazebo_gui:=true
+
+export ROS_DOMAIN_ID=221
+export ROS_LOCALHOST_ONLY=1
+export IGN_PARTITION=bai3_manual_demo221
+
+ros2 launch hri_bai3_environment bai3_sim.launch.py \
+  moveit_launch_rviz:=false gazebo_gui:=true
 ```
 
-Giữ terminal mở; chờ ba controller ACTIVE, MoveIt sẵn sàng và camera quan sát
-đủ năm vật ở home. Camera cố định tại (0,3; −0,5; 0,75) m, nhìn chếch xuống toàn
-bàn, 400×300/5 Hz. Chạy trên desktop thật, không Xephyr. Mọi terminal phải dùng
-cùng domain/partition; không dùng domain 233 (đã lỗi DDS).
+Giữ terminal mở, chờ robot và năm khối xuất hiện.
+Ban đầu khối xanh dương nằm trong vùng B.
+Đổi `moveit_launch_rviz:=true` nếu muốn mở thêm RViz.
 
-## Gọi LLM thật — terminal 2
-
-9Router phải đang chạy. Key Google được cấu hình trong provider Gemini của
-router; chương trình chỉ dùng key **9Router**, không đọc credential store.
+## 6. Kiểm tra và gửi lệnh — terminal 2
 
 ```bash
 cd ~/workspaces/ur_gz_humble_bai3
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-export ROS_DOMAIN_ID=221 ROS_LOCALHOST_ONLY=1 IGN_PARTITION=bai3_manual_demo221 DISPLAY=:0
-ros2 run ur3_llm_control bai3_task --prompt-key --screenshots \
-  --base-url http://localhost:20128/v1 \
-  --model gemini/gemini-3.5-flash-lite --timeout 45 \
-  --command 'Cho khối đỏ vào B' \
+
+export ROS_DOMAIN_ID=221
+export ROS_LOCALHOST_ONLY=1
+export IGN_PARTITION=bai3_manual_demo221
+
+ros2 action info /move_action
+ros2 topic info /bai3/camera/image
+ros2 topic echo /bai3/table_state --once --full-length
+```
+
+Trước khi chạy, cần có:
+
+- `/move_action`: một action server.
+- Topic ảnh: một publisher và một subscription.
+- `table_state`: nhận đủ năm khối, không có trường `error`.
+
+Chạy demo xử lý vùng B đang bị chiếm:
+
+```bash
+ros2 run ur3_llm_control bai3_task \
+  --prompt-key \
+  --command "Cho khối đỏ vào B" \
   --evidence "$HOME/ur3e_demo_results/bai3-$(date +%Y%m%d-%H%M%S)"
 ```
 
-`--prompt-key` dùng `ROUTER_API_KEY` nếu đã có; nếu chưa có, nhập tại
-`9Router key (hidden):` rồi Enter, ký tự không hiện. HTTP 401 nghĩa là xác thực
-bị từ chối; nếu biến đang giữ key cũ/sai, `unset ROUTER_API_KEY` rồi nhập kín.
-Không in key, đưa key vào command hoặc lưu key trong repo/log/chat.
-URL/model/timeout chỉnh bằng các cờ trên. Output demo đặt ngoài bộ mã nộp;
-thư mục mỗi lần phải mới. Lỗi ảnh không đổi kết quả điều khiển.
+Nhập **key 9Router** khi được hỏi rồi nhấn Enter.
+Ký tự không hiện trên màn hình.
 
-Thêm `--plan-only` để gọi LLM/validate mà không gửi motion goal. Bài 03 plan-only
-vẫn cần world/camera/MoveIt vì context lấy từ quan sát thật và kiểm tra IK vùng tạm.
-`--listen` thay `--command` nhận một `std_msgs/String` trên `/bai3/command`;
-trạng thái ở `/bai3/task_status`. Không dùng plan lưu làm demo chính.
+Robot cần chuyển xanh dương đến chỗ tạm, đặt đỏ vào B
+và về tư thế ban đầu. Đợi `TASK SUCCESS` trước thao tác tiếp theo.
 
-## Kết quả đã xác nhận và phạm vi bộ rút gọn
+## 7. Các tùy chọn
 
-**Chương trình gốc đã PASS trên hai world mới liên tiếp ngày 07/10/2026:**
-gọi LLM thật “Cho khối đỏ vào B”, một camera RGB-D, bật `--screenshots`,
-mỗi world **7/7 skill**, blue_cube → temp_1, red_cube → zone_b, cuối home/tay
-trống, **`scene_verified=true`**. Hai lượt có `source="9Router live"`, không dùng
-plan lưu hay continuation executor. World 01 chạy khi mô phỏng đã đạt khoảng
-321 giây; world 02 bắt đầu khoảng 20 giây.
+### Key 9Router
 
-Bản sửa giữ ngưỡng freshness **1 giây**, tách ROS time và monotonic time,
-ghép RGB/depth cùng stamp/frame, nhận ảnh mới nhất. `CameraStateProvider`
-dùng node/executor/thread `bai3_camera_receiver` riêng, khóa snapshot và đóng
-receiver có kiểm soát, để nhận camera độc lập với callback action/TF của task.
-Đây là receiver ROS bổ sung, vẫn chỉ **một camera vật lý**. Collision và xác
-nhận gắp/giữ/thả không thay đổi; không fallback pose Gazebo.
+`--prompt-key` hỏi key nếu biến `ROUTER_API_KEY` chưa được đặt.
+Key nhập bằng cách này chỉ dùng cho lần chạy hiện tại.
 
-Probe có kiểm soát đã tái hiện camera mới bị chờ sau callback task chậm và
-kiểm tra receiver sửa được cơ chế này. Lượt quay lỗi cũ thiếu trace nguồn đồng
-thời, nên **chưa chứng minh nguyên nhân duy nhất** của lỗi tự nhiên.
-Log quay sau hai world kiểm chứng còn ghi một PASS (`video-20261007-014948`)
-và một FAIL ở home bước 7/10 của lệnh nhiều vật (`video-20261007-015427`:
-RGB-D stale/unavailable), trước bước gắp green_cube.
-Lượt FAIL vẫn là FAIL; chưa sửa/chạy lại trong lượt đóng gói này.
+Muốn nhập một lần cho nhiều lượt trong cùng terminal:
 
-Plan đã kiểm chứng: `home → pick(blue) → place(blue,temp_1) → home → pick(red) →
-place(red,zone_b) → home`. LLM tự chọn từ occupancy camera và ID vùng tạm hợp lệ;
-plan mới có thể khác. Kỳ vọng terminal: `USER COMMAND`, `LLM PLAN`, `VALIDATION:
-PASS`, SUCCESS từng skill, `POSITION CHECK` rồi `TASK SUCCESS` với 7 skills và
-scene_verified cho plan trên. Camera nhìn lại đủ năm vật, held/pending null.
+```bash
+read -rsp "9Router key: " ROUTER_API_KEY
+echo
+export ROUTER_API_KEY
+```
 
-**Bộ rút gọn chỉ được kiểm tra cấu trúc, import, entrypoint, cài đặt tài nguyên,
-launch, URDF/SRDF và đường dẫn; chưa build/chạy lại bộ rút gọn hoặc robot.**
-Không coi kiểm tra tĩnh là một demo PASS mới. Tài liệu/ảnh/log gốc được giữ ngoài
-bộ nộp; có video quay riêng trên máy; PDF/họ tên vẫn cần hoàn thiện trước nộp.
+Sau đó có thể bỏ `--prompt-key`. Mở terminal mới cần đặt key lại.
+Không lưu key vào mã nguồn hoặc đưa lên Git.
 
-## Thành phần và giới hạn
+### Thay model và URL
 
-Prompt: `src/ur3_llm_control/ur3_llm_control/bai3_prompt.txt`.
-`bai3_task.py` nhận lệnh/executor; `planning.py` và `router_response.py` gọi/đọc
-9Router; `bai3_state.py` là camera provider/occupancy/validator;
-`bai3_skills.py` tái sử dụng `skills.py` qua MoveIt. Perception nằm trong
-`src/hri_bai3_perception/hri_bai3_perception/{node,geometry}.py`.
-World/config/launch Bài 03 nằm trong `src/hri_bai3_environment`.
-Giữ tài nguyên Bài 02 vì launch Bài 03 tái sử dụng MoveIt overlay và mô tả robot.
+Mặc định:
 
-RGB/depth ghép cùng timestamp và kiểm tra frame. Cube pose phục vụ điều khiển
-chỉ lấy từ camera; `/bai3/validation/gazebo_poses` là đối chiếu độc lập, không là
-fallback của perception/executor. Vật tĩnh bị che giữ collision từ camera cũ với
-margin, không coi là vùng trống. Gắp/giữ/thả phải xác nhận bằng quan sát thật ở
-checkpoint; không bắt camera thấy vật liên tục trong mọi chuyển động. Một tư
-thế quan sát bổ sung được kiểm tra collision có thể dùng khi cube đang giữ bị
-che; không xác nhận được thì dừng. Home sau mỗi place để nhìn lại/sync scene.
+- URL: `http://localhost:20128/v1`
+- Model: `gemini/gemini-3.5-flash-lite`
+- Thời gian chờ: 45 giây
 
-Vùng tạm là ID ứng viên, được lọc theo footprint/clearance/mép bàn/IK; không
-mapping cố định theo màu hoặc đặt chồng. Validator mô phỏng toàn chuỗi holding/
-occupancy trước motion; executor dừng ở lỗi, CLI !=0, không retry mù.
+Đổi model bằng tên được 9Router hỗ trợ:
 
-Giới hạn: cube 30 mm/màu riêng/song song trục, extrinsic camera mô phỏng đã biết;
-chưa xác nhận yaw tùy ý hoặc camera thật. Green/purple đã nhận diện, chưa kiểm
-chứng gắp. Mất vật khi bị che có thể chỉ phát hiện ở checkpoint kế tiếp; chưa
-có recovery tổng quát/nhiều client. MoveIt dependency từng lỗi shutdown,
-chưa sửa dependency. MSSV 23020744, họ tên còn trống và cần bổ sung trước nộp.
+```bash
+ros2 run ur3_llm_control bai3_task \
+  --prompt-key \
+  --model "TEN_MODEL_TRONG_9ROUTER" \
+  --command "Cho khối đỏ vào B" \
+  --evidence "$HOME/ur3e_demo_results/bai3-$(date +%Y%m%d-%H%M%S)"
+```
+
+Thay `TEN_MODEL_TRONG_9ROUTER` bằng tên trong danh sách model
+của router. Model cần được cấu hình và có quyền truy cập.
+
+Đổi URL hoặc thời gian chờ bằng:
+
+```text
+--base-url "URL_9ROUTER" --timeout 60
+```
+
+### Chỉ xem kế hoạch
+
+Thêm `--plan-only` để lập và kiểm tra kế hoạch, robot không di chuyển:
+
+```bash
+ros2 run ur3_llm_control bai3_task \
+  --prompt-key --plan-only \
+  --command "Cho khối đỏ vào B" \
+  --evidence "$HOME/ur3e_demo_results/bai3-plan-$(date +%Y%m%d-%H%M%S)"
+```
+
+Bài 3 vẫn cần mô phỏng, camera và MoveIt trong chế độ này
+để lấy trạng thái vật và kiểm tra chỗ đặt tạm.
+
+### Lưu kết quả và chụp ảnh
+
+- `--evidence` bắt buộc trong bản Bài 3 hiện tại.
+  Thư mục phải chưa tồn tại.
+- Thêm `--screenshots` nếu muốn tự chụp cửa sổ khi hoàn thành
+  hoặc gặp lỗi. Đây không phải camera nhận diện vật.
+- Kết quả lưu ngoài repository, không đưa lên Git.
+
+### Mã sinh viên
+
+Ngữ cảnh mặc định sử dụng MSSV `23020744`.
+`bai3_task` hiện chưa có tùy chọn `--student-id` hoặc
+`--student-name` như chương trình Bài 2.
+
+## 8. Lưu ý vận hành và giới hạn
+
+- Hai terminal phải dùng cùng domain và partition.
+- Chỉ chạy một phiên mô phỏng và một chương trình điều khiển.
+  Launch đã mở camera và nhận diện; không chạy perception riêng.
+- Dùng “xanh dương” hoặc `blue_cube` để tránh nhầm với xanh lá.
+- Để quay lại demo ban đầu, dừng launch bằng `Ctrl+C`,
+  chờ kết thúc rồi mở world mới. Không dừng khi đang mang vật.
+- Nếu có `TASK FAILED`, kiểm tra lỗi trước khi chạy tiếp.
+- Hai world mới đã hoàn thành demo LLM thật 7/7 thao tác.
+  Lượt nhiều vật tiếp nối vẫn có lỗi dữ liệu camera cũ;
+  hệ thống chưa ổn định trong mọi tình huống.
+- Bộ mã rút gọn chưa được build/chạy lại độc lập trên máy sạch.
