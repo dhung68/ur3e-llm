@@ -1,6 +1,0 @@
-waiting for service to become available...
-requester: making request: moveit_msgs.srv.GetStateValidity_Request(robot_state=moveit_msgs.msg.RobotState(joint_state=sensor_msgs.msg.JointState(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), name=[], position=[], velocity=[], effort=[]), multi_dof_joint_state=sensor_msgs.msg.MultiDOFJointState(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), joint_names=[], transforms=[], twist=[], wrench=[]), attached_collision_objects=[], is_diff=True), group_name='ur_manipulator', constraints=moveit_msgs.msg.Constraints(name='', joint_constraints=[], position_constraints=[], orientation_constraints=[], visibility_constraints=[]))
-
-response:
-moveit_msgs.srv.GetStateValidity_Response(valid=True, contacts=[], cost_sources=[moveit_msgs.msg.CostSource(cost_density=1.0, aabb_min=geometry_msgs.msg.Vector3(x=-0.0695116633834084, y=0.21947197987049027, z=0.6559857183754266), aabb_max=geometry_msgs.msg.Vector3(x=-0.026296007503329777, y=0.23460687999083496, z=0.7316747565468339))], constraint_result=[])
-

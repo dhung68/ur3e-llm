@@ -14,9 +14,6 @@ setup(
     entry_points={"console_scripts": [
         "bai3_task = ur3_llm_control.bai3_task:main",
         "llm_task = ur3_llm_control.llm_node:main",
-        "llm_demo = ur3_llm_control.llm_demo:main",
         "run_skills = ur3_llm_control.cli:main",
-        "validate_cycles = ur3_llm_control.validation:main",
-        "validate_matrix = ur3_llm_control.matrix_validation:main",
     ]},
 )
