@@ -1,7 +1,7 @@
 # Bài thực hành 03 — UR3e, camera RGB-D và LLM
 
-Bộ nộp trên nhánh `assignments_3`, lấy mã từ commit nền
-`05b12d27c4a358db15d91b1a26550006368e9193`. README và năm package tự xây là toàn bộ
+Bộ nộp trên nhánh `assignments_3`, giữ cấu trúc rút gọn hiện có và bổ sung
+bản sửa camera đã kiểm chứng ngày 07/10/2026. README và năm package tự xây là toàn bộ
 mã cần nộp; package UR tải riêng. Giữ `.gitignore` và LICENSE; không kèm test,
 runner kiểm thử, báo cáo, log/evidence, ảnh debug, cache hoặc build/install.
 
@@ -82,8 +82,8 @@ trống; blue ban đầu chiếm zone_b. Kết thúc phiên cũ đúng cây ti�
 cd ~/workspaces/ur_gz_humble_bai3
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-export ROS_DOMAIN_ID=221 IGN_PARTITION=bai3_submission DISPLAY=:0
-ros2 launch hri_bai3_environment bai3_sim.launch.py
+export ROS_DOMAIN_ID=221 ROS_LOCALHOST_ONLY=1 IGN_PARTITION=bai3_manual_demo221 DISPLAY=:0
+ros2 launch hri_bai3_environment bai3_sim.launch.py moveit_launch_rviz:=false gazebo_gui:=true
 ```
 
 Giữ terminal mở; chờ ba controller ACTIVE, MoveIt sẵn sàng và camera quan sát
@@ -100,11 +100,11 @@ router; chương trình chỉ dùng key **9Router**, không đọc credential st
 cd ~/workspaces/ur_gz_humble_bai3
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-export ROS_DOMAIN_ID=221 IGN_PARTITION=bai3_submission DISPLAY=:0
+export ROS_DOMAIN_ID=221 ROS_LOCALHOST_ONLY=1 IGN_PARTITION=bai3_manual_demo221 DISPLAY=:0
 ros2 run ur3_llm_control bai3_task --prompt-key --screenshots \
   --base-url http://localhost:20128/v1 \
   --model gemini/gemini-3.5-flash-lite --timeout 45 \
-  --command 'Đặt red_cube vào zone_b. Nếu có vật chiếm vùng, chuyển vật đó tới một vị trí trống trước.' \
+  --command 'Cho khối đỏ vào B' \
   --evidence "$HOME/ur3e_demo_results/bai3-$(date +%Y%m%d-%H%M%S)"
 ```
 
@@ -122,10 +122,27 @@ trạng thái ở `/bai3/task_status`. Không dùng plan lưu làm demo chính.
 
 ## Kết quả đã xác nhận và phạm vi bộ rút gọn
 
-**Chương trình gốc đã chạy LLM thật trên cấu hình một camera thành công 7/7
-skill**, blue_cube → temp_1, red_cube → zone_b, cuối home/tay trống,
-**`scene_verified=true`**. Phiên gốc ngày 06/10/2026 có `source="9Router live"`;
-đây là luồng tích hợp đầy đủ, không chỉ executor replay.
+**Chương trình gốc đã PASS trên hai world mới liên tiếp ngày 07/10/2026:**
+gọi LLM thật “Cho khối đỏ vào B”, một camera RGB-D, bật `--screenshots`,
+mỗi world **7/7 skill**, blue_cube → temp_1, red_cube → zone_b, cuối home/tay
+trống, **`scene_verified=true`**. Hai lượt có `source="9Router live"`, không dùng
+plan lưu hay continuation executor. World 01 chạy khi mô phỏng đã đạt khoảng
+321 giây; world 02 bắt đầu khoảng 20 giây.
+
+Bản sửa giữ ngưỡng freshness **1 giây**, tách ROS time và monotonic time,
+ghép RGB/depth cùng stamp/frame, nhận ảnh mới nhất. `CameraStateProvider`
+dùng node/executor/thread `bai3_camera_receiver` riêng, khóa snapshot và đóng
+receiver có kiểm soát, để nhận camera độc lập với callback action/TF của task.
+Đây là receiver ROS bổ sung, vẫn chỉ **một camera vật lý**. Collision và xác
+nhận gắp/giữ/thả không thay đổi; không fallback pose Gazebo.
+
+Probe có kiểm soát đã tái hiện camera mới bị chờ sau callback task chậm và
+kiểm tra receiver sửa được cơ chế này. Lượt quay lỗi cũ thiếu trace nguồn đồng
+thời, nên **chưa chứng minh nguyên nhân duy nhất** của lỗi tự nhiên.
+Log quay sau hai world kiểm chứng còn ghi một PASS (`video-20261007-014948`)
+và một FAIL ở home bước 7/10 của lệnh nhiều vật (`video-20261007-015427`:
+RGB-D stale/unavailable), trước bước gắp green_cube.
+Lượt FAIL vẫn là FAIL; chưa sửa/chạy lại trong lượt đóng gói này.
 
 Plan đã kiểm chứng: `home → pick(blue) → place(blue,temp_1) → home → pick(red) →
 place(red,zone_b) → home`. LLM tự chọn từ occupancy camera và ID vùng tạm hợp lệ;
@@ -136,7 +153,7 @@ scene_verified cho plan trên. Camera nhìn lại đủ năm vật, held/pending
 **Bộ rút gọn chỉ được kiểm tra cấu trúc, import, entrypoint, cài đặt tài nguyên,
 launch, URDF/SRDF và đường dẫn; chưa build/chạy lại bộ rút gọn hoặc robot.**
 Không coi kiểm tra tĩnh là một demo PASS mới. Tài liệu/ảnh/log gốc được giữ ngoài
-bộ nộp; chưa tạo video/PDF hoặc tự upload sản phẩm báo cáo.
+bộ nộp; có video quay riêng trên máy; PDF/họ tên vẫn cần hoàn thiện trước nộp.
 
 ## Thành phần và giới hạn
 

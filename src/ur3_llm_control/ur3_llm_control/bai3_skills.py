@@ -15,8 +15,54 @@ def scene_config():
 
 class CameraSkills(Skills):
     def __init__(self, evidence):
-        super().__init__(evidence, compact_evidence=True, node_name='bai3_task',
-                         scene_config=scene_config(), provider_factory=CameraStateProvider)
+        try:
+            super().__init__(evidence, compact_evidence=True, node_name='bai3_task',
+                             scene_config=scene_config(),
+                             provider_factory=lambda node: CameraStateProvider(node, independent=True))
+        except Exception:
+            self.destroy_node()
+            raise
+
+    def spin(self, seconds):
+        """Drain callbacks fairly on one persistent executor, also during actions.
+
+        A single global spin_once can handle only action/clock/TF work while a
+        fresh table_state is still waiting in DDS. Never call a stale stream
+        fresh merely because one unrelated callback completed.
+        """
+        import time
+        from rclpy.executors import SingleThreadedExecutor
+        executor = getattr(self, '_camera_executor', None)
+        if executor is None:
+            executor = self._camera_executor = SingleThreadedExecutor(context=self.context)
+            executor.add_node(self)
+        started = time.monotonic()
+        deadline = started + seconds
+        while self.context.ok() and time.monotonic() < deadline:
+            # Keep arguments constant so the ready-callback iterator is not
+            # recreated before it reaches all ready subscriptions.
+            executor.spin_once(timeout_sec=.01)
+        self.last_spin_elapsed_s = time.monotonic()-started
+
+    def wait(self, future, timeout=15.):
+        import time
+        deadline = time.monotonic() + timeout
+        while self.context.ok() and not future.done() and time.monotonic() < deadline:
+            self.spin(.05)
+        if not future.done():
+            raise TimeoutError(f'ROS request exceeded {timeout}s')
+        return future.result()
+
+    def destroy_node(self):
+        provider = getattr(self, 'provider', None)
+        if provider is not None:
+            provider.close()
+        executor = getattr(self, '_camera_executor', None)
+        if executor is not None:
+            executor.remove_node(self)
+            executor.shutdown()
+            self._camera_executor = None
+        return super().destroy_node()
 
     def set_gripper(self, position):
         import time
@@ -78,29 +124,33 @@ class CameraSkills(Skills):
         Cancellation failures retain the original camera error and recovery state.
         """
         import time
-        import numpy as np
         import rclpy
-        from .skills import matrix, pose_data
         handle = self.wait(client.send_goal_async(goal), 10.)
         if not handle.accepted:
             self.record('action', label=label, accepted=False)
             raise RuntimeError(f'{label}: goal rejected')
         future = handle.get_result_async()
         deadline = time.monotonic()+timeout
-        samples=[];last_sample=0.
+        samples=[]
+        camera_max_gap=0.; camera_updates_before=getattr(self.provider, 'update_count', 0)
         try:
             while rclpy.ok() and not future.done():
-                rclpy.spin_once(self, timeout_sec=.05)
+                self.spin(.05)
+                # The result callback may have completed this action. Camera
+                # grasp/hold/place checkpoints still run after settling below.
+                if future.done(): break
                 if time.monotonic()>deadline: raise TimeoutError(f'{label}: action timeout')
-                if time.monotonic()-self.provider.received > 1 or self.provider.message.get('error'):
-                    raise RuntimeError(self.provider.message.get('error', 'Camera state stale during motion'))
+                camera_max_gap=max(camera_max_gap,time.monotonic()-self.provider.received)
+                self.provider.check_fresh()
                 # Camera object checks occur at stable observation checkpoints.
                 # Occlusion or different view timestamps during motion do not
                 # replace measurements with attachment/Gazebo poses.
                 self.state()  # measured joint freshness remains mandatory
             response=future.result()
         except Exception as original:
-            self.record('action_observation_failed',label=label,reason=str(original))
+            self.record('action_observation_failed',label=label,reason=str(original),
+                        camera=self.provider.diagnostics(include_history=True),
+                        last_spin_elapsed_s=getattr(self,'last_spin_elapsed_s',None))
             cancel=handle.cancel_goal_async()
             try:
                 cancellation=self.wait(cancel, 15.)
@@ -111,7 +161,10 @@ class CameraSkills(Skills):
                 self.motion_unresolved=True
             raise RuntimeError(f'{label}: {original}') from original
         code=response.result.error_code.val
-        self.record('action',label=label,accepted=True,status=response.status,error_code=code,samples=samples)
+        self.record('action',label=label,accepted=True,status=response.status,error_code=code,samples=samples,
+                    camera_max_callback_gap_s=camera_max_gap,
+                    camera_updates=getattr(self.provider,'update_count',0)-camera_updates_before,
+                    camera=self.provider.diagnostics())
         if require_success and (response.status != 4 or code != 1):
             raise RuntimeError(f'{label}: status {response.status}, error {code}')
         self.spin(.3)

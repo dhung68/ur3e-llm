@@ -6,7 +6,7 @@ import cv2
 cv2.setNumThreads(1)
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import String
 from cv_bridge import CvBridge
@@ -22,7 +22,7 @@ def pair(rgb, depth, info, last_pair):
     common=rgb.keys() & depth.keys()
     if not common or info is None:return None
     key=max(common)
-    if key==last_pair:return None
+    if last_pair is not None and key<=last_pair:return None
     r,rw=rgb[key];d,dw=depth[key]
     if time.monotonic()-min(rw,dw)>1:raise ValueError('Camera data stale')
     return key,r,d,min(rw,dw)
@@ -35,14 +35,19 @@ class Perception(Node):
         self.rgb={};self.depth={};self.info=None;self.last_pair=None;self.last_received=0.
         self.bridge=CvBridge()
         self.publisher=self.create_publisher(String,'/bai3/table_state',1)
-        self.create_subscription(Image,'/bai3/camera/image',lambda m:self.cache(self.rgb,m),qos_profile_sensor_data)
-        self.create_subscription(Image,'/bai3/camera/depth_image',lambda m:self.cache(self.depth,m),qos_profile_sensor_data)
-        self.create_subscription(CameraInfo,'/bai3/camera/camera_info',self.on_info,qos_profile_sensor_data)
+        latest_image=QoSProfile(history=HistoryPolicy.KEEP_LAST,depth=1,
+                               reliability=ReliabilityPolicy.BEST_EFFORT)
+        self.create_subscription(Image,'/bai3/camera/image',lambda m:self.cache(self.rgb,m),latest_image)
+        self.create_subscription(Image,'/bai3/camera/depth_image',lambda m:self.cache(self.depth,m),latest_image)
+        self.create_subscription(CameraInfo,'/bai3/camera/camera_info',self.on_info,latest_image)
         self.create_timer(.05,self.process)
 
     def on_info(self,msg):self.info=msg
 
     def cache(self,store,msg):
+        # Wall callback age and ROS image-header age are separate clock domains.
+        # Keep only the latest DDS image; never subtract simulation seconds from
+        # a monotonic wall timestamp (the simulator can slow down).
         store[stamp(msg)]=(msg,time.monotonic())
         while len(store)>12:del store[min(store)]
 
@@ -57,6 +62,10 @@ class Perception(Node):
             if not (rgb.header.frame_id==depth.header.frame_id==self.info.header.frame_id):
                 raise ValueError('Camera RGB/depth/camera_info frame mismatch')
             self.last_pair=key;self.last_received=received
+            state['capture_monotonic_s']=received
+            state['image_age_sim_s']=max(0.,self.get_clock().now().nanoseconds/1e9-key)
+            if state['image_age_sim_s']>1:
+                raise ValueError('Camera image header stale in simulation time')
             state['objects'],state['errors']=detect(self.bridge.imgmsg_to_cv2(rgb,'rgb8'),
                 self.bridge.imgmsg_to_cv2(depth,'32FC1'),list(self.info.k),self.config['camera'])
             state['stamp']=key;state['sensor_frame']=rgb.header.frame_id
