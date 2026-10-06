@@ -13,6 +13,8 @@ from .task_executor import execute_plan
 
 def capture_completion(node, evidence, emit, label):
     """Optional GUI evidence, bounded camera/capture timeout; no effect on success."""
+    if evidence is None:
+        return
     try:
         from .screenshots import capture_windows
         # Keep the existing wide view: completion needs all three zones visible.
@@ -35,7 +37,7 @@ def main(argv=None):
     parser.add_argument('--plan-file', help='Validate/execute saved raw JSON steps; no LLM call')
     parser.add_argument('--plan-only', action='store_true')
     parser.add_argument('--serve', action='store_true', help='Read std_msgs/String on ~/command; fail-stop after any task error')
-    parser.add_argument('--evidence', required=True, help='New directory, never overwritten')
+    parser.add_argument('--evidence', help='Optional new output directory; omitted means terminal only')
     parser.add_argument('--base-url', default='http://localhost:20128/v1')
     parser.add_argument('--model', default='gemini/gemini-3.5-flash-lite')
     parser.add_argument('--timeout', type=float, default=45.0)
@@ -49,9 +51,11 @@ def main(argv=None):
     args = parser.parse_args(remove_ros_args(args=sys.argv if argv is None else ['llm_task', *argv])[1:])
     if sum(bool(x) for x in (args.command, args.plan_file, args.serve)) != 1:
         parser.error('Choose exactly one of --command, --plan-file, --serve')
-    evidence = Path(args.evidence).resolve()
-    evidence.mkdir(parents=True, exist_ok=False)
-    log = (evidence / 'task.log').open('w', encoding='utf-8')
+    evidence = Path(args.evidence).resolve() if args.evidence is not None else None
+    log = None
+    if evidence is not None:
+        evidence.mkdir(parents=True, exist_ok=False)
+        log = (evidence / 'task.log').open('w', encoding='utf-8')
     node = None
     report = {'success': False, 'mode': 'plan-only' if args.plan_only else 'execute',
               'source': 'saved-plan executor (no LLM request)' if args.plan_file else '9Router LLM'}
@@ -63,9 +67,14 @@ def main(argv=None):
     def emit(label, data):
         line = label + ': ' + (data if isinstance(data, str) else json.dumps(data, ensure_ascii=False))
         print(line, flush=True)
-        log.write(line + '\n'); log.flush()
+        if log is not None:
+            log.write(line + '\n'); log.flush()
         if publisher is not None:
             publisher.publish(String(data=json.dumps({'event': label, 'data': data}, ensure_ascii=False)))
+
+    def write_json(name, value):
+        if evidence is not None:
+            (evidence / name).write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf-8')
 
     def incoming(msg):
         if busy or queue:
@@ -90,8 +99,7 @@ def main(argv=None):
                               'normalized_response': planner.last_response_fixture,
                               'request_options': {'stream': False, 'accept': 'application/json',
                                                   'accept_encoding': 'identity'}}
-                (evidence / f'router_response{suffix}.json').write_text(
-                    json.dumps(diagnostic, ensure_ascii=False, indent=2))
+                write_json(f'router_response{suffix}.json', diagnostic)
         else:
             plan = parse_plan(Path(saved).read_text(encoding='utf-8'))
         emit('LLM PLAN' if saved is None else 'SAVED PLAN', plan)
@@ -105,7 +113,7 @@ def main(argv=None):
             raise ValueError('Task acceptance requires final home')
         report['plan'] = plan
         emit('VALIDATION', 'PASS (complete JSON schema and holding sequence)')
-        (evidence / f'plan{suffix}.json').write_text(json.dumps(plan, ensure_ascii=False, indent=2))
+        write_json(f'plan{suffix}.json', plan)
         if args.plan_only:
             report.update(success=True, motion_executed=False)
             emit('TASK SUCCESS', 'Plan validated; no motion executed')
@@ -125,9 +133,9 @@ def main(argv=None):
                                 ('action', 'holding_pass', 'scene_consistency', 'joint_target_check')]
             emit('FINAL POSITION CHECK', report['final_objects'])
             emit('TASK SUCCESS', {'skills': len(report['results']), 'scene_verified': True})
-            if args.screenshots:
+            if args.screenshots and evidence is not None:
                 capture_completion(node, evidence, emit, 'completed'+suffix)
-        (evidence / f'task{suffix}.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
+        write_json(f'task{suffix}.json', report)
         busy = False
 
     try:
@@ -136,7 +144,11 @@ def main(argv=None):
             if not sys.stdin.isatty():
                 raise RuntimeError('--prompt-key requires a real terminal; use ROUTER_API_KEY otherwise')
             os.environ['ROUTER_API_KEY'] = getpass.getpass('9Router key (hidden): ')
-        rclpy.init(args=None if argv is None else ['llm_task', *argv])
+        init_args = list(sys.argv if argv is None else ['llm_task', *argv])
+        if evidence is None:
+            # Disable ROS's external file logger as well as application evidence.
+            init_args += ['--ros-args', '--disable-external-lib-logs']
+        rclpy.init(args=init_args)
         node = Node('ur3_llm_control')
         settings = {}
         for name, value in [('base_url', args.base_url), ('model', args.model), ('timeout', args.timeout),
@@ -168,10 +180,10 @@ def main(argv=None):
                           holding_verified=node.holding_verified, completed_results=node.results,
                           checks=[e for e in node.events if e['stage'] in
                                   ('action', 'holding_pass', 'scene_consistency', 'joint_target_check')])
-            if args.screenshots:
+            if args.screenshots and evidence is not None:
                 capture_completion(node, evidence, emit, f'error-{task_index:03d}')
         suffix = f'-{task_index:03d}' if args.serve else ''
-        (evidence / f'task{suffix}.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
+        write_json(f'task{suffix}.json', report)
         return 1
     except KeyboardInterrupt:
         # No autonomous recovery movement. Use only one client and interrupt
@@ -183,4 +195,5 @@ def main(argv=None):
             node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
-        log.close()
+        if log is not None:
+            log.close()

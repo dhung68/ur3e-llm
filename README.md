@@ -105,14 +105,29 @@ export ROS_DOMAIN_ID=231 IGN_PARTITION=bai2_submission DISPLAY=:0
 ros2 run ur3_llm_control llm_task --prompt-key \
   --base-url http://localhost:20128/v1 \
   --model gemini/gemini-3.5-flash-lite --timeout 45 \
-  --command 'Arrange all objects according to my student ID' \
-  --evidence "$HOME/ur3e_demo_results/bai2-$(date +%Y%m%d-%H%M%S)"
+  --command 'Arrange all objects according to my student ID'
 ```
 
 Nếu `ROUTER_API_KEY` chưa có, nhập key 9Router ở `9Router key (hidden):`, Enter;
 ký tự không hiện. Nếu biến cũ gây HTTP 401, `unset ROUTER_API_KEY` rồi chạy lại
 để nhập kín. Không đưa key thật vào command, README, repo, log hoặc chat.
-Thêm `--screenshots` nếu cần ảnh; output được ghi **ngoài bộ mã nộp**.
+`--evidence` là **tùy chọn cho `llm_task`**, cả khi chạy task, `--plan-only`
+hoặc `--serve`. Lệnh trên chỉ hiển thị kết quả ở terminal và topic status:
+không tạo thư mục, log, JSON hoặc ảnh. Backend ghi log file ROS của client cũng
+được tắt; log do launch Gazebo/MoveIt riêng sinh ra không thuộc tùy chọn này.
+Khi không có evidence, `--screenshots` không chụp ảnh. Các kiểm tra plan,
+collision, gắp/giữ, zone trống và vị trí cuối vẫn chạy đầy đủ.
+
+Muốn lưu như trước, thêm các tham số sau vào lệnh trên; thư mục phải chưa tồn tại
+và nằm **ngoài bộ mã nộp**:
+
+```bash
+--evidence "$HOME/ur3e_demo_results/bai2-$(date +%Y%m%d-%H%M%S)" --screenshots
+```
+
+Có evidence: lưu `task.log`, `router_response.json`, `plan.json`, `task.json` và
+ảnh hoàn thành/lỗi khi có `--screenshots`; thiếu ảnh không đổi kết quả motion.
+Lỗi mạng, JSON hoặc skill trả mã thoát khác 0 và không tự retry chuyển động.
 
 MSSV mặc định `23020744`, P=2: yellow_cube → zone_a, red_cube → zone_b,
 blue_cube → zone_c. Kỳ vọng `USER COMMAND`, `LLM PLAN`, `VALIDATION: PASS`,
@@ -132,9 +147,42 @@ chưa xác nhận một lượt LLM mới → robot cho câu này.
 `llm_task` là node `ur3_llm_control`; có thể dùng `--serve` nhận
 `std_msgs/String` trên `/ur3_llm_control/command`, trạng thái ở
 `/ur3_llm_control/status`. `run_skills` gọi home/pick/place không qua LLM.
+Ở chế độ serve, chỉ dùng một client, cùng domain/partition của launch:
+
+```bash
+ros2 run ur3_llm_control llm_task --serve --prompt-key
+# Terminal khác, sau khi source và export cùng ROS_DOMAIN_ID/IGN_PARTITION:
+ros2 topic pub --once /ur3_llm_control/command std_msgs/msg/String \
+  "{data: 'Hãy gắp khối đỏ, đặt vào vùng B, rồi về home.'}"
+ros2 topic echo /ur3_llm_control/status
+```
+
+`run_skills` vẫn yêu cầu `--evidence`; thay đổi tùy chọn chỉ áp dụng `llm_task`
+và API `Skills(evidence_dir=None)`. Cùng một instance Skills lưu trạng thái giữ
+vật qua các bước. Schema plan ví dụ:
+
+```json
+{"steps":[{"skill":"home"},{"skill":"pick","object":"red_cube"},{"skill":"place","object":"red_cube","zone":"zone_b"},{"skill":"home"}]}
+```
+
+Validator từ chối field thừa, key trùng, skill/object/zone không hợp lệ,
+`place` trước `pick`, `home` khi đang giữ hoặc kết thúc còn giữ vật. MSSV là
+ngữ cảnh cho LLM; các skill không áp đặt mapping màu–zone cố định.
+
 Prompt: `src/ur3_llm_control/ur3_llm_control/planner_prompt.txt`; client/validator: `planning.py`,
 parser: `router_response.py`; executor: `task_executor.py`; motion/state:
-`skills.py`, `state.py`. Launch dùng cấu hình riêng rồi tham chiếu cấu hình UR gốc.
+`skills.py`, `state.py`. Launch dùng cấu hình riêng rồi tham chiếu cấu hình UR gốc:
+`bai2_sim.launch.py` khởi động Gazebo/control, gripper, MoveIt, scene initializer
+và bridge `/bai2/gazebo_poses`; `bai2_moveit.launch.py` bổ sung SRDF và mapping
+controller. Group `ur_grasp` dùng KDL tới `grasp_tcp`, `gripper` có states
+`open/closed`; `ur_manipulator` gốc giữ tip `tool0`.
+
+Bàn có mặt trên z=0,08 m; cube cạnh 30 mm có mass/collision; zone là visual.
+`config/scene.json` mô tả ban đầu, Skills đọc pose Gazebo có freshness và cập nhật
+planning scene sau mỗi lần thả. Nâng 50 mm và xác nhận giữ hơn 3,2 giây mô phỏng;
+khi mang/hạ kiểm tra giữ vật liên tục, mất vật thì hủy action. Sau thả phải xác
+nhận toàn bộ footprint cube nằm trong zone. Giữ nguyên PID, gravity và collision,
+không teleport/weld; planning attachment không thay gắp vật lý.
 
 Validator kiểm tra schema/allowlist/thứ tự/held object trước motion; executor
 kiểm tra zone trống và trạng thái thật, dừng ngay ở lỗi, CLI !=0, không retry mù.
@@ -142,5 +190,7 @@ Chưa hỗ trợ buffer/đặt chồng/zone bị chiếm, nhiều client hoặc 
 Segfault MoveIt dependency khi shutdown từng xuất hiện, chưa sửa dependency.
 
 Bộ rút gọn được kiểm tra import, file cài đặt, tài nguyên, cấu hình và URDF/SRDF;
-**chưa build hoặc chạy lại robot với bộ rút gọn**. Bằng chứng/báo cáo gốc được giữ
+**chưa build hoặc chạy lại robot với bộ rút gọn**. Riêng sửa evidence tùy chọn đã
+qua 25 kiểm tra offline tập trung ở workspace gốc (success/error, serve,
+file/ảnh và guard chuyển động); không coi đây là một lượt chạy robot mới. Bằng chứng/báo cáo gốc được giữ
 ngoài bộ nộp. Không coi kiểm tra tĩnh là một demo robot PASS mới.

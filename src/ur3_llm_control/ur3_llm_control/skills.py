@@ -81,13 +81,14 @@ class SkillResult:
 
 
 class Skills(Node):
-    def __init__(self, evidence_dir, state_provider=None, screenshots=False,
+    def __init__(self, evidence_dir=None, state_provider=None, screenshots=False,
                  compact_evidence=False, node_name="ur3e_skills"):
         super().__init__(node_name, parameter_overrides=[
             rclpy.parameter.Parameter("use_sim_time", value=True)])
         self.compact_evidence = compact_evidence
-        self.evidence = Path(evidence_dir)
-        self.evidence.mkdir(parents=True, exist_ok=True)
+        self.evidence = Path(evidence_dir) if evidence_dir is not None else None
+        if self.evidence is not None:
+            self.evidence.mkdir(parents=True, exist_ok=True)
         self.events = []
         self.results = []
         self.held_object = None
@@ -98,7 +99,7 @@ class Skills(Node):
         self.last_joint_wall = 0.0
         self.joints = {}
         self.velocities = {}
-        self.screenshots = screenshots
+        self.screenshots = screenshots and self.evidence is not None
         self.config = json.loads((Path(get_package_share_directory("hri_bai2_environment")) /
                                   "config/scene.json").read_text())
         self.provider = state_provider or GazeboStateProvider(self)
@@ -223,17 +224,21 @@ class Skills(Node):
             self.events.append(data)
             return data
         self.events.append(data)
-        (self.evidence / "events.json").write_text(json.dumps(self.events, indent=2))
+        if self.evidence is not None:
+            (self.evidence / "events.json").write_text(json.dumps(self.events, indent=2))
         brief = {key: value for key, value in extra.items() if key != "samples"}
         if "samples" in extra:
             brief["sample_count"] = len(extra["samples"])
-        self.get_logger().info(f"{stage}: {json.dumps(brief)}")
+        if self.evidence is None:
+            print(f"{stage}: {json.dumps(brief)}", flush=True)
+        else:
+            self.get_logger().info(f"{stage}: {json.dumps(brief)}")
         return data
 
     def snapshot(self, stage):
         self.spin(0.15)
         self.record(stage)
-        if not self.screenshots:
+        if self.evidence is None or not self.screenshots:
             return
         try:
             from .screenshots import aim_gazebo, capture_windows
@@ -449,7 +454,7 @@ class Skills(Node):
         deadline = time.monotonic() + 10.0
         while True:
             observed = self.service(GetPlanningScene, "/get_planning_scene", request).scene
-            if not getattr(self, "compact_evidence", False):
+            if self.evidence is not None and not getattr(self, "compact_evidence", False):
                 (self.evidence / f"scene_check_{len(self.events):03d}.json").write_text(
                     json.dumps(message_to_ordereddict(observed), indent=2))
             planning_joints = dict(zip(observed.robot_state.joint_state.name, observed.robot_state.joint_state.position))
@@ -577,7 +582,7 @@ class Skills(Node):
                              self.contact_object if not self.holding_verified else None,
                              bool(self.contact_object and not self.holding_verified))
         self.results.append(asdict(result))
-        if not getattr(self, "compact_evidence", False):
+        if self.evidence is not None and not getattr(self, "compact_evidence", False):
             (self.evidence / "results.json").write_text(json.dumps(self.results, indent=2))
         self.record("skill_result", **asdict(result))
         return result
