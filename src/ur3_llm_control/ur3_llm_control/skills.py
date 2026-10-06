@@ -82,7 +82,8 @@ class SkillResult:
 
 class Skills(Node):
     def __init__(self, evidence_dir, state_provider=None, screenshots=False,
-                 compact_evidence=False, node_name="ur3e_skills"):
+                 compact_evidence=False, node_name="ur3e_skills",
+                 scene_config=None, provider_factory=None):
         super().__init__(node_name, parameter_overrides=[
             rclpy.parameter.Parameter("use_sim_time", value=True)])
         self.compact_evidence = compact_evidence
@@ -99,9 +100,9 @@ class Skills(Node):
         self.joints = {}
         self.velocities = {}
         self.screenshots = screenshots
-        self.config = json.loads((Path(get_package_share_directory("hri_bai2_environment")) /
+        self.config = deepcopy(scene_config) if scene_config is not None else json.loads((Path(get_package_share_directory("hri_bai2_environment")) /
                                   "config/scene.json").read_text())
-        self.provider = state_provider or GazeboStateProvider(self)
+        self.provider = state_provider or (provider_factory(self) if provider_factory else GazeboStateProvider(self))
         self.tf = Buffer()
         self.listener = TransformListener(self.tf, self)
         self.subscription = self.create_subscription(JointState, "/joint_states", self._joints, 10)

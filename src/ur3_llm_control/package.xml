@@ -27,4 +27,5 @@
   <exec_depend>rosidl_runtime_py</exec_depend>
   <test_depend>python3-pytest</test_depend>
   <export><build_type>ament_python</build_type></export>
+  <exec_depend>hri_bai3_environment</exec_depend>
 </package>

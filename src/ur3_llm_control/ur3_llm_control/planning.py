@@ -119,6 +119,12 @@ class RouterPlanner:
         self.last_response_fixture = None
 
     def generate(self, command, student, scene=None):
+        context = {'student': student, 'objects': OBJECTS, 'zones': ZONES,
+                   'held_object': None, 'scene': scene or 'Execution will check live Gazebo state before motion.'}
+        return self.generate_context(command, context, Path(__file__).with_name('planner_prompt.txt'))
+
+    def generate_context(self, command, context, prompt_path):
+        """Same authenticated transport, with an assignment-specific prompt/state."""
         self.last_response_diagnostic = {}
         self.last_response_fixture = None
         if not isinstance(command, str) or not command.strip() or len(command) > 4000:
@@ -126,9 +132,7 @@ class RouterPlanner:
         key = os.environ.get('ROUTER_API_KEY')
         if not key:
             raise RouterError(SECRET_HELP)
-        prompt = Path(__file__).with_name('planner_prompt.txt').read_text(encoding='utf-8')
-        context = {'student': student, 'objects': OBJECTS, 'zones': ZONES,
-                   'held_object': None, 'scene': scene or 'Execution will check live Gazebo state before motion.'}
+        prompt = Path(prompt_path).read_text(encoding='utf-8')
         payload = {'model': self.model, 'temperature': 0, 'stream': False,
                    'messages': [{'role': 'system', 'content': prompt},
                                 {'role': 'user', 'content': json.dumps({'context': context, 'command': command}, ensure_ascii=False)}]}
