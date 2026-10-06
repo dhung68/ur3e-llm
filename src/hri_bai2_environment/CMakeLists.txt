@@ -12,7 +12,7 @@ install(
 
 # Cài script để ROS có thể chạy nó.
 install(
-  PROGRAMS scripts/initialize_scene.py scripts/test_gripper.py
+  PROGRAMS scripts/initialize_scene.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
